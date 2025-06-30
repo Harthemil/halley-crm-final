@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}{% if empreendimento %}Editar Empreendimento{% else %}Adicionar Empreendimento{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if empreendimento %}Editar Empreendimento{% else %}Adicionar Novo Empreendimento{% endif %}</h1>
+
+    <fieldset>
+        <legend>Análise Inteligente de Documento</legend>
+        <form action="{{ url_for('ler_pdf_empreendimento') }}" method="post" enctype="multipart/form-data">
+            <p>Envie um ou mais PDFs para que a IA tente preencher os campos abaixo. **Os arquivos enviados aqui já serão anexados ao empreendimento.**</p>
+            <div>
+                <label for="documento">Selecione o(s) arquivo(s) PDF:</label>
+                <input type="file" id="documento" name="documento" accept=".pdf" required multiple>
+            </div>
+            <br>
+            <button type="submit" style="background-color: #ffc107; color: #000;">Analisar PDF com IA</button>
+        </form>
+    </fieldset>
+
+    <hr>
+
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('editar_empreendimento', id=empreendimento.id) if empreendimento else url_for('adicionar_empreendimento') }}">
+        
+                {% if arquivos_para_anexar %}
+            <input type="hidden" name="arquivos_ja_enviados" value="{{ arquivos_para_anexar|join(',') }}">
+        {% endif %}
+
+        {% if dados_extraidos %}
+            <input type="hidden" name="form_originado_ia" value="true">
+            <input type="hidden" name="texto_original_ia" value="{{ texto_original_para_salvar }}">
+            <div class="alert alert-success">Revise os campos preenchidos pela IA e clique em "Salvar Empreendimento" para confirmar e ensinar o modelo.</div>
+        {% endif %}
+
+        <fieldset>
+            <legend>Informações Principais</legend>
+            <div><label for="nome">Nome do Empreendimento:</label><input type="text" id="nome" name="nome" value="{{ dados_extraidos.get('nome') or (empreendimento.nome if empreendimento) or '' }}" required></div><br>
+            <div><label for="status">Status (Ex: Lançamento, Em Obras...):</label><input type="text" id="status" name="status" value="{{ dados_extraidos.get('status') or (empreendimento.status if empreendimento) or '' }}"></div><br>
+            <div><label for="endereco">Endereço Completo:</label><input type="text" id="endereco" name="endereco" value="{{ dados_extraidos.get('endereco') or (empreendimento.endereco if empreendimento) or '' }}"></div><br>
+            <div><label for="descricao">Descrição Geral:</label><textarea id="descricao" name="descricao" rows="4">{{ dados_extraidos.get('descricao') or (empreendimento.descricao if empreendimento) or '' }}</textarea></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Prazos e Valores</legend>
+            <div><label for="prazo_entrega">Prazo Final de Entrega (Data):</label><input type="date" id="prazo_entrega" name="prazo_entrega" value="{{ dados_extraidos.get('prazo_entrega') or (empreendimento.prazo_entrega.strftime('%Y-%m-%d') if empreendimento and empreendimento.prazo_entrega else '') }}"></div><br>
+            <div><label for="previsao_entrega">Previsão de Entrega (Texto):</label><input type="text" id="previsao_entrega" name="previsao_entrega" value="{{ dados_extraidos.get('previsao_entrega') or (empreendimento.previsao_entrega if empreendimento) or '' }}" placeholder="Ex: 2º semestre de 2026"></div><br>
+            <div><label for="valor_medio_unidades">Valor Médio das Unidades:</label><input type="text" id="valor_medio_unidades" name="valor_medio_unidades" value="{{ dados_extraidos.get('valor_medio_unidades') or (empreendimento.valor_medio_unidades if empreendimento) or '' }}" placeholder="Ex: R$ 1.200.000,00"></div><br>
+            <div><label for="valor_a_partir_de">Valor "A partir de":</label><input type="text" id="valor_a_partir_de" name="valor_a_partir_de" value="{{ dados_extraidos.get('valor_a_partir_de') or (empreendimento.valor_a_partir_de if empreendimento) or '' }}" placeholder="Ex: R$ 750.000,00"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Estrutura e Detalhes Técnicos</legend>
+            <div><label for="tamanho_apartamentos_planta">Tamanho dos Apartamentos (Planta):</label><input type="text" id="tamanho_apartamentos_planta" name="tamanho_apartamentos_planta" value="{{ dados_extraidos.get('tamanho_apartamentos_planta') or (empreendimento.tamanho_apartamentos_planta if empreendimento) or '' }}" placeholder="Ex: 50m², 75m² e 120m²"></div><br>
+            <div><label for="vagas_garagem">Vagas de Garagem:</label><input type="text" id="vagas_garagem" name="vagas_garagem" value="{{ dados_extraidos.get('vagas_garagem') or (empreendimento.vagas_garagem if empreendimento) or '' }}" placeholder="Ex: 1 ou 2 vagas"></div><br>
+            <div><label for="tamanho_terreno">Tamanho do Terreno:</label><input type="text" id="tamanho_terreno" name="tamanho_terreno" value="{{ dados_extraidos.get('tamanho_terreno') or (empreendimento.tamanho_terreno if empreendimento) or '' }}" placeholder="Ex: 4.500 m²"></div><br>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;"><label for="quantidade_torres">Nº de Torres:</label><input type="number" id="quantidade_torres" name="quantidade_torres" value="{{ dados_extraidos.get('quantidade_torres') or (empreendimento.quantidade_torres if empreendimento) or '' }}"></div>
+                <div style="flex: 1;"><label for="subsolos">Nº de Subsolos:</label><input type="number" id="subsolos" name="subsolos" value="{{ dados_extraidos.get('subsolos') or (empreendimento.subsolos if empreendimento) or '' }}"></div>
+                <div style="flex: 1;"><label for="andares">Nº de Andares:</label><input type="number" id="andares" name="andares" value="{{ dados_extraidos.get('andares') or (empreendimento.andares if empreendimento) or '' }}"></div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Marketing</legend>
+            <div><label for="campanha_promocional">Campanha Promocional Ativa:</label><textarea id="campanha_promocional" name="campanha_promocional" rows="3">{{ dados_extraidos.get('campanha_promocional') or (empreendimento.campanha_promocional if empreendimento) or '' }}</textarea></div><br>
+            <div>
+                <input type="checkbox" id="publico" name="publico" {% if (dados_extraidos and dados_extraidos.get('publico')) or (empreendimento and empreendimento.publico) %}checked{% endif %}>
+                <label for="publico"> Publicar este empreendimento no site (via API)</label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Anexar Novos Materiais (Opcional)</legend>
+            <div>
+                <label for="arquivos">Selecione arquivos adicionais (se necessário):</label>
+                <input type="file" id="arquivos" name="arquivos" multiple>
+            </div>
+        </fieldset>
+        
+        <br>
+        <button type="submit">Salvar Empreendimento</button>
+    </form>
+    <br>
+    <a href="{{ url_for('pagina_empreendimentos') }}">Cancelar</a>
+{% endblock %}

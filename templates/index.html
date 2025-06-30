@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Clientes{% endblock %}
+
+{% block content %}
+    <h1>Lista de Clientes Ativos</h1>
+    
+    <form method="get" action="{{ url_for('lista_clientes') }}">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end;">
+            <div style="flex-grow: 1;">
+                <label for="termo_busca">Buscar por Nome:</label>
+                <input type="search" id="termo_busca" name="termo_busca" placeholder="Digite parte do nome..." value="{{ termo_busca or '' }}" style="width: 100%;">
+            </div>
+            <div style="flex-grow: 1;">
+                <label for="status_busca">Filtrar por Status:</label>
+                <select id="status_busca" name="status_busca" style="width: 100%;">
+                    <option value="">-- Todos os Status --</option>
+                    {% for status in status_options %}
+                        <option value="{{ status.name }}" {% if status_busca == status.name %}selected{% endif %}>{{ status.value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="submit">Buscar</button>
+            </div>
+            <div>
+                <a href="{{ url_for('lista_clientes') }}" class="button" style="background-color: #6c757d; padding: 10px 15px; display: inline-block;">Limpar</a>
+            </div>
+        </div>
+    </form>
+    
+    <a href="{{ url_for('adicionar_cliente') }}" class="button">Adicionar Novo Cliente</a>
+    <hr>
+
+    {% if clientes %}
+        <ul>
+            {% for cliente in clientes %}
+            <li>
+                <a href="{{ url_for('detalhes_cliente', id=cliente.id) }}">{{ cliente.nome_completo }}</a>
+                 - (Status: {{ cliente.status.value if cliente.status else 'N/A' }})
+            
+                <form action="{{ url_for('descartar_cliente', id=cliente.id) }}" method="post" style="display: inline; float: right;">
+                    <button type="submit" onclick="return confirm('Deseja mover este cliente para a lixeira?');" style="font-size: 12px; background-color: #6c757d; padding: 2px 5px;">Descartar</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhum cliente encontrado com os critérios de busca.</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Gerenciamento de Usuários{% endblock %}
+
+{% block content %}
+    <h1>Usuários Cadastrados no Sistema</h1>
+    
+    <div class="card">
+        <ul>
+            {% for usuario in usuarios %}
+                <li>
+                    <strong>{{ usuario.nome }}</strong><br>
+                    <small>Email: {{ usuario.email }} | Perfil: {{ usuario.perfil.value }} | Ativo: {{ 'Sim' if usuario.ativo else 'Não' }}</small>
+                </li>
+            {% else %}
+                <p>Apenas você está cadastrado no momento.</p>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

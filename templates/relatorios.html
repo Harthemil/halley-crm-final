@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Relatórios{% endblock %}
+
+{% block content %}
+    <h1>Central de Relatórios</h1>
+    <p>Selecione um relatório para gerar e baixar.</p>
+    <hr>
+
+    <h3>Relatórios de Clientes</h3>
+    <ul>
+        <li>
+            <a href="{{ url_for('exportar_clientes_csv') }}" class="button" style="background-color: #17a2b8;">Exportar Lista Completa de Clientes (.csv)</a>
+            <p style="font-size: 14px; color: #6c757d;">Baixa uma planilha com todos os dados dos clientes visíveis para você, ideal para análises no Excel.</p>
+        </li>
+    </ul>
+    
+    {% endblock %}

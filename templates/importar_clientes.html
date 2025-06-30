@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Importar Clientes{% endblock %}
+
+{% block content %}
+    <h1>Importar Clientes via Planilha (.csv)</h1>
+    <p>Faça o upload de um arquivo .csv para cadastrar múltiplos clientes de uma só vez.</p>
+    <hr>
+    
+    <div class="card">
+        <p><strong>Instruções:</strong></p>
+        <p>Seu arquivo .csv deve ter as colunas com os seguintes nomes exatos (a ordem não importa):</p>
+        <code>Nome Completo, Data de Nascimento, CPF, RG, Profissão, E-mail, DDD, Telefone, Estado Civil</code>
+        <p style="margin-top: 10px;">O separador de colunas deve ser o ponto e vírgula (`;`).</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" style="margin-top: 20px;">
+        <div>
+            <label for="arquivo">Selecione o arquivo .csv:</label>
+            <input type="file" id="arquivo" name="arquivo" accept=".csv" required>
+        </div>
+        <br>
+        <button type="submit" class="button" style="background-color: #28a745;">Enviar e Importar</button>
+    </form>
+
+    <br>
+    <a href="{{ url_for('lista_clientes') }}">Voltar para a Lista de Clientes</a>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Renomear Material{% endblock %}
+
+{% block content %}
+    <h1>Renomear Material de Apoio</h1>
+    <p>Você está editando o nome de exibição do arquivo: <strong>{{ material.nome_arquivo_servidor }}</strong></p>
+    <hr>
+    
+    <form method="post">
+        <div>
+            <label for="nome_original">Novo nome de exibição:</label>
+            <input type="text" id="nome_original" name="nome_original" value="{{ material.nome_original }}" class="form-control" required>
+        </div>
+        <br>
+        <button type="submit">Salvar Novo Nome</button>
+    </form>
+    <br>
+    <a href="{{ url_for('detalhes_empreendimento', id=material.empreendimento_id) }}">Cancelar</a>
+{% endblock %}

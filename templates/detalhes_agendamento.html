@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes do Evento{% endblock %}
+
+{% block content %}
+    <h1>{{ agendamento.titulo }}</h1>
+    <hr>
+    
+    <p><strong>Início:</strong> {{ agendamento.data_inicio.strftime('%d/%m/%Y às %H:%M') }}</p>
+    {% if agendamento.data_fim %}
+        <p><strong>Fim:</strong> {{ agendamento.data_fim.strftime('%d/%m/%Y às %H:%M') }}</p>
+    {% endif %}
+
+    {% if agendamento.cliente %}
+        <p><strong>Cliente Associado:</strong> <a href="{{ url_for('detalhes_cliente', id=agendamento.cliente.id) }}">{{ agendamento.cliente.nome_completo }}</a></p>
+    {% endif %}
+    
+    {% if agendamento.empreendimento %}
+        <p><strong>Empreendimento Associado:</strong> <a href="{{ url_for('detalhes_empreendimento', id=agendamento.empreendimento.id) }}">{{ agendamento.empreendimento.nome }}</a></p>
+    {% endif %}
+    
+    <fieldset>
+        <legend>Descrição</legend>
+        <p>{{ agendamento.descricao | nl2br if agendamento.descricao else 'Nenhuma descrição.' }}</p>
+    </fieldset>
+    <hr>
+
+    <a href="{{ url_for('editar_agendamento', id=agendamento.id) }}" class="button">Editar Evento</a>
+    <form action="{{ url_for('deletar_agendamento', id=agendamento.id) }}" method="post" style="display: inline; margin-left: 10px;">
+        <button type="submit" onclick="return confirm('Tem certeza que deseja deletar este evento?');" style="background-color: #dc3545;">Deletar Evento</button>
+    </form>
+
+    <br><br>
+    <a href="{{ url_for('agenda') }}">Voltar para a Agenda</a>
+{% endblock %}

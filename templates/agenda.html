@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Minha Agenda{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Minha Agenda</h1>
+        <a href="{{ url_for('adicionar_agendamento') }}" class="button">Adicionar Novo Evento</a>
+    </div>
+    <hr>
+    
+    <div id='calendar'></div>
+
+    <script>
+      // Garante que o script só rode depois que a página carregou completamente
+      document.addEventListener('DOMContentLoaded', function() {
+        // Encontra o elemento <div> que preparamos para o calendário
+        var calendarEl = document.getElementById('calendar');
+
+        // Cria e configura o calendário
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth', // Visão inicial de Mês
+          locale: 'pt-br', // Deixa os botões e datas em português
+          headerToolbar: { // Configura os botões do cabeçalho
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay' // Botões para trocar a visão
+          },
+          // A MÁGICA ACONTECE AQUI:
+          // Diz ao calendário para buscar os eventos na nossa rota de API
+          events: '/api/agendamentos',
+          
+          height: 'auto' // Ajusta a altura automaticamente
+        });
+
+        // Desenha o calendário na tela
+        calendar.render();
+      });
+    </script>
+{% endblock %}

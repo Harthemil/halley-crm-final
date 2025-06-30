@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <h1>Dashboard</h1>
+    <p>Bem-vindo ao seu painel de controle, {{ session.usuario_nome }}.</p>
+    <hr>
+    
+    <div class="dashboard-grid">
+        <div class="card">
+            <h2>Total de Clientes Ativos</h2>
+            <p class="number">{{ total_clientes }}</p>
+        </div>
+        <div class="card">
+            <h2>Total de Empreendimentos</h2>
+            <p class="number">{{ total_empreendimentos }}</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid" style="margin-top: 40px;">
+        <div class="recent-list card">
+            <h3>Clientes Adicionados Recentemente</h3>
+            <ul>
+                {% for cliente in ultimos_clientes %}
+                    <li><a href="{{ url_for('detalhes_cliente', id=cliente.id) }}">{{ cliente.nome_completo }}</a></li>
+                {% else %}
+                    <li>Nenhum cliente cadastrado.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="recent-list card">
+            <h3>Empreendimentos Recentes</h3>
+            <ul>
+                {% for empreendimento in ultimos_empreendimentos %}
+                    <li><a href="{{ url_for('detalhes_empreendimento', id=empreendimento.id) }}">{{ empreendimento.nome }}</a></li>
+                {% else %}
+                    <li>Nenhum empreendimento cadastrado.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

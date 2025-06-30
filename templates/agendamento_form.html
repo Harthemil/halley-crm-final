@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}{% if agendamento %}Editar Evento{% else %}Adicionar Evento na Agenda{% endif %}{% endblock %}
+
+{% block content %}
+    <h1>{% if agendamento %}Editar Evento{% else %}Adicionar Novo Evento{% endif %}</h1>
+    <form method="post">
+        <div>
+            <label for="titulo">Título do Evento:</label>
+            <input type="text" id="titulo" name="titulo" value="{{ agendamento.titulo if agendamento else '' }}" required>
+        </div>
+        <br>
+        <div>
+            <label for="data_inicio">Início:</label>
+            <input type="datetime-local" id="data_inicio" name="data_inicio" value="{{ agendamento.data_inicio.strftime('%Y-%m-%dT%H:%M') if agendamento and agendamento.data_inicio else '' }}" required>
+        </div>
+        <br>
+        <div>
+            <label for="data_fim">Fim (Opcional):</label>
+            <input type="datetime-local" id="data_fim" name="data_fim" value="{{ agendamento.data_fim.strftime('%Y-%m-%dT%H:%M') if agendamento and agendamento.data_fim else '' }}">
+        </div>
+        <br>
+        <div>
+            <label for="cliente_id">Associar ao Cliente (Opcional):</label>
+            <select id="cliente_id" name="cliente_id">
+                <option value="">-- Nenhum --</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {% if agendamento and agendamento.cliente_id == cliente.id %}selected{% endif %}>
+                        {{ cliente.nome_completo }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <div>
+            <label for="empreendimento_id">Associar ao Empreendimento (Opcional):</label>
+            <select id="empreendimento_id" name="empreendimento_id">
+                <option value="">-- Nenhum --</option>
+                {% for empreendimento in empreendimentos %}
+                    <option value="{{ empreendimento.id }}" {% if agendamento and agendamento.empreendimento_id == empreendimento.id %}selected{% endif %}>
+                        {{ empreendimento.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <div>
+            <label for="descricao">Descrição / Observações:</label>
+            <textarea id="descricao" name="descricao" rows="5">{{ agendamento.descricao if agendamento else '' }}</textarea>
+        </div>
+        <br>
+        <button type="submit">Salvar Evento</button>
+    </form>
+    <br>
+    <a href="{{ url_for('agenda') }}">Cancelar e Voltar para a Agenda</a>
+{% endblock %}

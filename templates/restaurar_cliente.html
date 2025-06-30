@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Restaurar e Reatribuir Cliente{% endblock %}
+
+{% block content %}
+    <h1>Restaurar e Reatribuir Cliente</h1>
+    <p>Você está restaurando o cliente: <strong>{{ cliente.nome_completo }}</strong>.</p>
+    <p>Por favor, selecione para qual usuário este cliente deve ser atribuído.</p>
+    <hr>
+    
+    <form method="post">
+        <div>
+            <label for="novo_proprietario_id">Atribuir para o Usuário:</label>
+            <select name="novo_proprietario_id" id="novo_proprietario_id" required>
+                {% for usuario in usuarios_disponiveis %}
+                    <option value="{{ usuario.id }}" {% if cliente.proprietario_id == usuario.id %}selected{% endif %}>
+                        {{ usuario.nome }} ({{ usuario.perfil.value }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <button type="submit" style="background-color: #28a745;">Confirmar Restauração</button>
+    </form>
+
+    <br>
+    <a href="{{ url_for('lista_clientes_descartados') }}">Cancelar e Voltar para a Lixeira</a>
+{% endblock %}/* Paleta de Cores e Variáveis */
+:root {
+    --cor-fundo: #f0f2f5;
+    --cor-branco: #ffffff;
+    --cor-primaria: #0d6efd;
+    --cor-primaria-hover: #0b5ed7;
+    --cor-sucesso: #198754;
+    --cor-perigo: #dc3545;
+    --cor-aviso: #ffc107;
+    --cor-cinza: #6c757d;
+    --cor-texto: #212529;
+    --cor-texto-suave: #6c757d;
+    --cor-borda: #dee2e6;
+    --sombra-card: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+/* Reset Básico e Estilos Gerais */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+h1, h2, h3 {
+    margin-top: 0;
+}
+
+a {
+    color: var(--cor-primaria);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--cor-borda);
+    margin: 2rem 0;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+ul li {
+    padding: 15px;
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+ul li:last-child {
+    border-bottom: none;
+}
+
+/* Navegação */
+nav {
+    background: var(--cor-branco);
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--cor-borda);
+    box-shadow: var(--sombra-card);
+}
+nav a {
+    color: var(--cor-texto-suave);
+    font-weight: 500;
+    transition: color 0.3s ease;
+    margin: 0 10px;
+}
+nav a:hover {
+    color: var(--cor-primaria);
+    text-decoration: none;
+}
+
+/* Cards e Dashboard */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+.card, fieldset {
+    background: var(--cor-branco);
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid var(--cor-borda);
+    box-shadow: var(--sombra-card);
+    margin-bottom: 15px;
+}
+.card .number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--cor-primaria);
+}
+fieldset {
+    border-color: #eee;
+}
+legend {
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 0 10px;
+}
+
+/* Botões */
+button, .button {
+    background-color: var(--cor-primaria);
+    color: var(--cor-branco);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    text-align: center;
+}
+button:hover, .button:hover {
+    background-color: var(--cor-primaria-hover);
+    color: var(--cor-branco) !important;
+    text-decoration: none;
+}
+button[style*="dc3545"] { background-color: var(--cor-perigo); }
+button[style*="dc3545"]:hover { background-color: #b02a37 !important; }
+button[style*="28a745"] { background-color: var(--cor-sucesso); }
+button[style*="28a745"]:hover { background-color: #147a46 !important; }
+button[style*="6c757d"] { background-color: var(--cor-cinza); }
+button[style*="6c757d"]:hover { background-color: #5a6268 !important; }
+
+/* Formulários */
+input[type="text"],
+input[type="email"],
+input[type="date"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+input[type="file"],
+input[type="datetime-local"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid var(--cor-borda);
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+}
+select {
+    cursor: pointer;
+}
+
+/* Alertas / Mensagens Flash */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+}
+.alert-success { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+.alert-danger { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+.alert-warning { background-color: #fff3cd; color: #664d03; border-color: #ffecb5; }
+.alert-info, .alert-secondary { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+
+/* Responsividade para Celular */
+@media (max-width: 768px) {
+    nav {
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    nav span {
+        float: none !important;
+        display: block;
+        margin-top: 10px;
+    }
+}

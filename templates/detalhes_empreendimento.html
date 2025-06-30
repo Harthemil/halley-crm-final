@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes de {{ empreendimento.nome }}{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>{{ empreendimento.nome }}</h1>
+        <a href="{{ url_for('editar_empreendimento', id=empreendimento.id) }}" class="button">Editar Empreendimento</a>
+    </div>
+    <p><strong>Status:</strong> {{ empreendimento.status or 'Não informado' }} | <strong>Endereço:</strong> {{ empreendimento.endereco or 'Não informado' }}</p>
+    <hr>
+    
+    <div class="dashboard-grid">
+        <div class="card"><h2>Valor a partir de</h2><p class="number" style="font-size: 36px;">{{ empreendimento.valor_a_partir_de or 'N/A' }}</p></div>
+        <div class="card"><h2>Valor Médio</h2><p class="number" style="font-size: 36px;">{{ empreendimento.valor_medio_unidades or 'N/A' }}</p></div>
+        <div class="card"><h2>Previsão de Entrega</h2><p class="number" style="font-size: 36px;">{{ empreendimento.previsao_entrega or 'N/A' }}</p></div>
+    </div>
+
+    <fieldset>
+        <legend>Descrição Geral</legend>
+        <p>{{ empreendimento.descricao | nl2br if empreendimento.descricao else 'Nenhuma descrição.' }}</p>
+    </fieldset>
+    
+    <fieldset>
+        <legend>Detalhes Técnicos</legend>
+        <p><strong>Plantas:</strong> {{ empreendimento.tamanho_apartamentos_planta or 'N/A' }} | <strong>Vagas:</strong> {{ empreendimento.vagas_garagem or 'N/A' }} | <strong>Tamanho do Terreno:</strong> {{ empreendimento.tamanho_terreno or 'N/A' }}</p>
+        <p><strong>Estrutura:</strong> {{ empreendimento.quantidade_torres or 'N/A' }} torre(s), {{ empreendimento.andares or 'N/A' }} andares, {{ empreendimento.subsolos or 'N/A' }} subsolo(s).</p>
+        <p><strong>Prazo Final de Entrega:</strong> {{ empreendimento.prazo_entrega.strftime('%d/%m/%Y') if empreendimento.prazo_entrega else 'Não informado' }}</p>
+    </fieldset>
+    
+    <fieldset>
+        <legend>Campanha Promocional</legend>
+        <p>{{ empreendimento.campanha_promocional | nl2br if empreendimento.campanha_promocional else 'Nenhuma campanha ativa.' }}</p>
+    </fieldset>
+    <hr>
+
+    <h2>Materiais de Apoio</h2>
+    {% if empreendimento.materiais %}
+        <ul>
+            {% for material in empreendimento.materiais %}
+                <li>
+                    <a href="{{ url_for('download_material', filename=material.nome_arquivo_servidor) }}" target="_blank">{{ material.nome_original }}</a>
+                    
+                    <span style="float: right;">
+                        <a href="{{ url_for('renomear_material', id=material.id) }}" style="font-size: 12px; margin-left: 15px;">Renomear</a>
+                        <form action="{{ url_for('deletar_material', id=material.id) }}" method="post" style="display: inline; margin-left: 10px;">
+                            <button type="submit" onclick="return confirm('Tem certeza que deseja deletar este arquivo permanentemente?');" style="font-size: 12px; background-color: #dc3545; padding: 2px 5px;">Deletar</button>
+                        </form>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhum material cadastrado para este empreendimento.</p>
+    {% endif %}
+
+    <p style="font-size: 14px; color: #6c757d;">Para adicionar novos materiais, vá em "Editar Empreendimento".</p>
+
+    <br><br>
+    <a href="{{ url_for('pagina_empreendimentos') }}">Voltar para a Lista</a>
+{% endblock %}

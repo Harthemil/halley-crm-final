@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes de {{ cliente.nome_completo }}{% endblock %}
+
+{% block content %}
+    <h1>{{ cliente.nome_completo }}</h1>
+    
+    <fieldset>
+        <legend>Informações de Negócio</legend>
+        <p><strong>Status do Cliente:</strong> {{ cliente.status.value if cliente.status else 'Não informado' }}</p>
+        <p><strong>Temperatura do Lead:</strong> {{ cliente.temperatura.value if cliente.temperatura else 'Não informado' }}</p>
+        <p><strong>Valor de Imóvel Buscado:</strong> {{ cliente.valor_imovel_buscado or 'Não informado' }}</p>
+        <p><strong>Origem do Lead:</strong> {{ cliente.origem_lead or 'Não informado' }}</p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Dados Pessoais</legend>
+        <p><strong>Email Pessoal:</strong> {{ cliente.email or 'Não informado' }}</p>
+        <p><strong>Email Comercial:</strong> {{ cliente.email_comercial or 'Não informado' }}</p>
+        <p><strong>Telefone Pessoal 1:</strong> ({{ cliente.ddd_pessoal or 'XX' }}) {{ cliente.telefone_pessoal or 'Não informado' }}</p>
+        <p><strong>Telefone Pessoal 2:</strong> ({{ cliente.ddd_pessoal_2 or 'XX' }}) {{ cliente.telefone_pessoal_2 or 'Não informado' }}</p>
+        <p><strong>Telefone Residencial:</strong> ({{ cliente.ddd_residencial or 'XX' }}) {{ cliente.telefone_residencial or 'Não informado' }}</p>
+        <p><strong>Telefone Comercial:</strong> ({{ cliente.ddd_comercial or 'XX' }}) {{ cliente.telefone_comercial or 'Não informado' }}</p>
+        <p><strong>CPF:</strong> {{ cliente.cpf or 'Não informado' }} | <strong>RG:</strong> {{ cliente.rg or 'Não informado' }}</p>
+        <p><strong>Data de Nascimento:</strong> {{ cliente.data_nascimento.strftime('%d/%m/%Y') if cliente.data_nascimento else 'Não informado' }}</p>
+        <p><strong>Profissão:</strong> {{ cliente.profissao or 'Não informado' }}</p>
+        <p><strong>Faixa de Renda:</strong> {{ cliente.faixa_renda or 'Não informado' }}</p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Endereço Residencial</legend>
+        <p>
+            {{ cliente.logradouro_residencial or 'Endereço não informado' }}{{ ', ' + cliente.numero_residencial if cliente.numero_residencial }}<br>
+            {{ cliente.bairro_residencial or '' }}{{ ' - ' + cliente.cidade_residencial if cliente.cidade_residencial }}{{ ' / ' + cliente.estado_residencial if cliente.estado_residencial }}<br>
+            CEP: {{ cliente.cep_residencial or '' }}
+        </p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Endereço Comercial (Cliente)</legend>
+        <p><strong>Empresa:</strong> {{ cliente.empresa_cliente or 'Não informado' }}</p>
+        <p><strong>Endereço:</strong><br>{{ cliente.endereco_comercial_cliente | nl2br if cliente.endereco_comercial_cliente else 'Não informado' }}</p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Dados Familiares e Contato do Cônjuge</legend>
+        <p><strong>Estado Civil:</strong> {{ cliente.estado_civil.value if cliente.estado_civil else 'Não informado' }}</p>
+        <p><strong>Cônjuge:</strong> {{ cliente.nome_conjuge or 'Não aplicável' }} | <strong>CPF:</strong> {{ cliente.cpf_conjuge or 'N/A' }}</p>
+        <p><strong>Profissão do Cônjuge:</strong> {{ cliente.profissao_conjuge or 'Não informado' }}</p>
+        <p><strong>Contato Pessoal Cônjuge:</strong> ({{ cliente.ddd_conjuge or 'XX' }}) {{ cliente.telefone_conjuge or 'Não informado' }} | <strong>Email Pessoal:</strong> {{ cliente.email_conjuge or 'Não informado' }}</p>
+        <p><strong>Contato Comercial Cônjuge:</strong> {{ cliente.email_conjuge_comercial or 'Não informado' }}</p>
+        <p><strong>Empresa Cônjuge:</strong> {{ cliente.empresa_conjuge or 'Não aplicável' }}</p>
+        <p><strong>Endereço Comercial Cônjuge:</strong><br>{{ cliente.endereco_comercial_conjuge | nl2br if cliente.endereco_comercial_conjuge else 'Não informado' }}</p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Perfil e Observações</legend>
+        <p>{{ cliente.observacoes | nl2br if cliente.observacoes else 'Nenhuma observação cadastrada.' }}</p>
+    </fieldset>
+    <hr>
+
+    <a href="{{ url_for('editar_cliente', id=cliente.id) }}" class="button">Editar Cliente</a>
+    <form action="{{ url_for('descartar_cliente', id=cliente.id) }}" method="post" style="display: inline; margin-left: 10px;">
+        <button type="submit" onclick="return confirm('Deseja mover este cliente para a lixeira?');" style="background-color: #6c757d;">Descartar</button>
+    </form>
+    <hr>
+    
+    <form action="{{ url_for('sugerir_empreendimento_ia', cliente_id=cliente.id) }}" method="post" style="margin-top: 20px;">
+        <button type="submit" style="background-color: #28a745; font-size: 16px; padding: 12px 20px;">Sugerir Empreendimentos (com IA)</button>
+    </form>
+    {% if get_flashed_messages(category_filter=['info']) %}
+        <div class="alert alert-info" style="margin-top: 20px;">
+            <h3>Sugestão da IA:</h3>
+            {% with messages = get_flashed_messages(category_filter=['info']) %}{% if messages %}{% for message in messages %}<p>{{ message | safe }}</p>{% endfor %}{% endif %}{% endwith %}
+        </div>
+    {% endif %}
+    <hr style="margin-top: 20px;">
+
+    <h2>Empreendimentos de Interesse</h2>
+    {% if cliente.empreendimentos_interesse %}
+        <ul>{% for empreendimento in cliente.empreendimentos_interesse %}<li><a href="{{ url_for('detalhes_empreendimento', id=empreendimento.id) }}">{{ empreendimento.nome }}</a><form action="{{ url_for('remover_interesse', cliente_id=cliente.id, empreendimento_id=empreendimento.id) }}" method="post" style="display: inline; margin-left: 10px;"><button type="submit" style="background-color: #dc3545; padding: 2px 5px; font-size: 12px;">Remover</button></form></li>{% endfor %}</ul>
+    {% else %}<p>Este cliente ainda não demonstrou interesse em nenhum empreendimento.</p>{% endif %}
+    <h3>Adicionar Interesse</h3>
+    <form action="{{ url_for('adicionar_interesse', cliente_id=cliente.id) }}" method="post"><select name="empreendimento_id"><option value="">-- Selecione --</option>{% for empreendimento in empreendimentos_disponiveis %}<option value="{{ empreendimento.id }}">{{ empreendimento.nome }}</option>{% endfor %}</select><button type="submit">Adicionar</button></form>
+    
+    <hr style="margin-top: 30px;">
+    <h2>Histórico de Atividades</h2>
+    <form action="{{ url_for('adicionar_atividade', cliente_id=cliente.id) }}" method="post" style="margin-bottom: 20px;">
+        <fieldset><legend>Registrar Nova Atividade</legend>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex-grow: 1;"><label for="tipo">Tipo:</label><select id="tipo" name="tipo" required>{% for tipo in tipos_atividade %}<option value="{{ tipo.name }}">{{ tipo.value }}</option>{% endfor %}</select></div>
+                <div style="flex-grow: 3;"><label for="resumo">Resumo:</label><input type="text" id="resumo" name="resumo" required style="width: 100%;" placeholder="Ex: Cliente pediu para retornar na próxima semana."></div>
+                <div><button type="submit">Registrar</button></div>
+            </div>
+        </fieldset>
+    </form>
+    {% if cliente.atividades.order_by(Atividade.data_criacao.desc()).all() %}
+        <ul>{% for atividade in cliente.atividades.order_by(Atividade.data_criacao.desc()).all() %}<li><strong>{{ atividade.tipo.value }}</strong> em {{ atividade.data_criacao.strftime('%d/%m/%Y %H:%M') }}<small> (por {{ atividade.usuario.nome }})</small><span style="float: right;"><a href="{{ url_for('editar_atividade', id=atividade.id) }}" style="font-size: 12px;">Editar</a><form action="{{ url_for('deletar_atividade', id=atividade.id) }}" method="post" style="display: inline; margin-left: 10px;"><button type="submit" onclick="return confirm('Tem certeza?');" style="font-size: 12px; background-color: #6c757d; color: white;">Deletar</button></form></span><p style="margin-top: 5px; margin-bottom: 0;">{{ atividade.resumo | nl2br }}</p></li>{% endfor %}</ul>
+    {% else %}<p>Nenhuma atividade registrada para este cliente.</p>{% endif %}
+
+    <br><br><a href="{{ url_for('lista_clientes') }}">Voltar para a Lista de Clientes</a>
+{% endblock %}

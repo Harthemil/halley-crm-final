@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Clientes Descartados{% endblock %}
+
+{% block content %}
+    <h1>Clientes na Lixeira</h1>
+    <p>Estes clientes foram descartados e não aparecem na lista principal. Apenas Admins podem vê-los e gerenciá-los.</p>
+    <hr>
+    
+    {% if clientes %}
+        <ul>
+            {% for cliente in clientes %}
+                <li>
+                    <strong>{{ cliente.nome_completo }}</strong> 
+                    <small>- Descartado por: {{ cliente.proprietario.nome if cliente.proprietario else 'N/A' }}</small>
+                    
+                    <span style="float: right;">
+                        <a href="{{ url_for('restaurar_cliente', id=cliente.id) }}" class="button" style="background-color: #28a745; font-size: 12px; padding: 2px 5px;">Restaurar / Reatribuir</a>
+                        
+                        <form action="{{ url_for('deletar_cliente_permanente', id=cliente.id) }}" method="post" style="display: inline; margin-left: 10px;">
+                            <button type="submit" onclick="return confirm('ATENÇÃO: Esta ação é PERMANENTE e não pode ser desfeita. Deseja continuar?');" style="font-size: 12px; background-color: #dc3545; padding: 2px 5px;">Deletar Permanente</button>
+                        </form>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>A lixeira de clientes está vazia.</p>
+    {% endif %}
+
+    <br>
+    <a href="{{ url_for('lista_clientes') }}">Voltar para a Lista de Clientes</a>
+{% endblock %}

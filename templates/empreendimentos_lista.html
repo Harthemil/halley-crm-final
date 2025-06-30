@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Lista de Empreendimentos{% endblock %}
+
+{% block content %}
+    <h1>Empreendimentos Cadastrados</h1>
+    
+    <a href="{{ url_for('adicionar_empreendimento') }}" class="button">Adicionar Novo Empreendimento</a>
+    <hr>
+
+    {% if empreendimentos %}
+        <ul>
+            {% for empreendimento in empreendimentos %}
+                <li>
+                    <a href="{{ url_for('detalhes_empreendimento', id=empreendimento.id) }}">
+                        <strong>{{ empreendimento.nome }}</strong>
+                    </a>
+                    <br>
+                    <small>Status: {{ empreendimento.status or 'N/A' }}</small>
+
+                    <form action="{{ url_for('deletar_empreendimento', id=empreendimento.id) }}" method="post" style="display: inline; float: right;">
+                        <button type="submit" onclick="return confirm('Tem certeza que deseja deletar este empreendimento e todos os seus materiais?');" style="font-size: 12px; background-color: #dc3545; padding: 2px 5px;">Deletar</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhum empreendimento cadastrado no momento.</p>
+    {% endif %}
+{% endblock %}
