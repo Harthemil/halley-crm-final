@@ -1,6 +1,7 @@
 import os
 import json
 import fitz
+from flask_migrate import Migrate
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify, Response
 from sqlalchemy import func
 import pandas as pd
@@ -28,7 +29,7 @@ except Exception as e:
     pass
 
 db.init_app(app)
-
+migrate = Migrate(app, db)
 @app.template_filter('nl2br')
 def nl2br_filter(s):
     return Markup(escape(s).replace('\n', '<br>\n'))
