@@ -1,22 +1,24 @@
 import os
 import json
 import fitz
-from flask_migrate import Migrate
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify, Response
 from sqlalchemy import func
 import pandas as pd
 from datetime import datetime, date
-from models import db, Cliente, Empreendimento, Usuario, Material, PerfilUsuario, StatusCliente, TemperaturaLead, EstadoCivil, Agendamento, Atividade, TipoAtividade, ExemploIA
+from models import db, Cliente, Empreendimento, Usuario, Material, PerfilUsuario, StatusCliente, TemperaturaLead, EstadoCivil, Agendamento, Atividade, TipoAtividade, ExemploIA, Tipologia
 from functools import wraps
 from werkzeug.utils import secure_filename
 from markupsafe import escape, Markup
 from dotenv import load_dotenv
 import google.generativeai as genai
+from flask_migrate import Migrate
 
 load_dotenv()
 app = Flask(__name__)
+
+# --- CONFIGURAÇÕES ---
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///halley_crm.db')
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'uma-outra-chave-muito-segura')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'uma-chave-padrao-muito-segura')
 basedir = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -30,12 +32,10 @@ except Exception as e:
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
 @app.template_filter('nl2br')
 def nl2br_filter(s):
     return Markup(escape(s).replace('\n', '<br>\n'))
-
-with app.app_context():
-    db.create_all()
 
 # --- DECORATORS E FUNÇÕES AUXILIARES ---
 def login_required(f):
@@ -67,7 +67,8 @@ def salvar_exemplo_ia(texto_original, form_data):
     }
     novo_exemplo = ExemploIA(
         texto_documento=texto_original,
-        json_resultado_corrigido=json.dumps(dados_corrigidos, ensure_ascii=False, indent=2)
+        json_resultado_corrigido=json.dumps(dados_corrigidos, ensure_ascii=False, indent=2),
+        instrucao_correcao=form_data.get('instrucao_correcao')
     )
     db.session.add(novo_exemplo)
     db.session.commit()
@@ -189,6 +190,7 @@ def adicionar_cliente():
             flash(f'Erro: O Email Comercial {email_comercial} já está cadastrado.', 'danger')
             return render_template('cliente_form.html', form_data=request.form, estado_civil_options=EstadoCivil, status_options=StatusCliente, temperatura_options=TemperaturaLead)
         data_nasc_obj = datetime.strptime(request.form.get('data_nascimento'), '%Y-%m-%d').date() if request.form.get('data_nascimento') else None
+        
         novo_cliente = Cliente(
             proprietario_id=session['usuario_id'],
             nome_completo=request.form.get('nome_completo'), data_nascimento=data_nasc_obj, cpf=cpf, rg=request.form.get('rg'), 
@@ -221,6 +223,7 @@ def adicionar_cliente():
         db.session.commit()
         flash('Cliente adicionado com sucesso!', 'success')
         return redirect(url_for('lista_clientes'))
+    
     return render_template('cliente_form.html', estado_civil_options=EstadoCivil, status_options=StatusCliente, temperatura_options=TemperaturaLead)
 
 @app.route('/cliente/<int:id>/editar', methods=['GET', 'POST'])
@@ -436,54 +439,50 @@ def pagina_empreendimentos():
 @login_required
 def detalhes_empreendimento(id):
     empreendimento = db.get_or_404(Empreendimento, id)
-    return render_template('detalhes_empreendimento.html', empreendimento=empreendimento)
+    return render_template('detalhes_empreendimento.html', empreendimento=empreendimento, Tipologia=Tipologia)
 
 @app.route('/empreendimento/adicionar', methods=['GET', 'POST'])
 @login_required
 def adicionar_empreendimento():
     if request.method == 'POST':
-        # 1. Cria o objeto do empreendimento com os dados de texto
         publico = 'publico' in request.form
         prazo_entrega_obj = datetime.strptime(request.form.get('prazo_entrega'), '%Y-%m-%d').date() if request.form.get('prazo_entrega') else None
-        
         novo_empreendimento = Empreendimento(
-            nome=request.form['nome'],
-            status=request.form.get('status'),
-            endereco=request.form.get('endereco'),
-            descricao=request.form.get('descricao'),
-            publico=publico,
-            prazo_entrega=prazo_entrega_obj,
-            previsao_entrega=request.form.get('previsao_entrega'),
-            valor_medio_unidades=request.form.get('valor_medio_unidades'),
+            nome=request.form['nome'], status=request.form.get('status'), endereco=request.form.get('endereco'), 
+            descricao=request.form.get('descricao'), publico=publico, prazo_entrega=prazo_entrega_obj, 
+            previsao_entrega=request.form.get('previsao_entrega'), valor_medio_unidades=request.form.get('valor_medio_unidades'), 
             valor_a_partir_de=request.form.get('valor_a_partir_de'),
-            tamanho_apartamentos_planta=request.form.get('tamanho_apartamentos_planta'),
-            vagas_garagem=request.form.get('vagas_garagem'),
-            tamanho_terreno=request.form.get('tamanho_terreno'),
+            tamanho_terreno=request.form.get('tamanho_terreno'), 
             quantidade_torres=int(request.form.get('quantidade_torres')) if request.form.get('quantidade_torres') else None,
             subsolos=int(request.form.get('subsolos')) if request.form.get('subsolos') else None,
             andares=int(request.form.get('andares')) if request.form.get('andares') else None,
-            campanha_promocional=request.form.get('campanha_promocional')
+            campanha_promocional=request.form.get('campanha_promocional'),
+            arquiteto=request.form.get('arquiteto'),
+            paisagismo=request.form.get('paisagismo'),
+            decoracao=request.form.get('decoracao')
         )
         db.session.add(novo_empreendimento)
-        
-        # 2. Salva o empreendimento primeiro para obter um ID
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            flash(f"Erro ao salvar os dados do empreendimento: {e}", "danger")
+            flash(f"Erro ao salvar empreendimento: {e}", "danger")
             return redirect(url_for('pagina_empreendimentos'))
-
-        # 3. Processa os arquivos que vieram da análise da IA (do campo oculto)
-        arquivos_pre_enviados_str = request.form.get('arquivos_ja_enviados')
-        if arquivos_pre_enviados_str:
-            for item in arquivos_pre_enviados_str.split(','):
-                if '|' in item:
-                    nome_original, nome_seguro = item.split('|')
-                    novo_material = Material(nome_original=nome_original, nome_arquivo_servidor=nome_seguro, empreendimento_id=novo_empreendimento.id)
-                    db.session.add(novo_material)
         
-        # 4. Processa arquivos novos enviados no formulário principal
+        metragens = request.form.getlist('metragem')
+        suites_lista = request.form.getlist('suites')
+        vagas_lista = request.form.getlist('vagas')
+        for i, metragem_item in enumerate(metragens):
+            if metragem_item and metragem_item.strip():
+                nova_tipologia = Tipologia(
+                    metragem=metragem_item, suites=suites_lista[i],
+                    vagas=vagas_lista[i], empreendimento_id=novo_empreendimento.id
+                )
+                db.session.add(nova_tipologia)
+        
+        if 'form_originado_ia' in request.form:
+            salvar_exemplo_ia(request.form.get('texto_original_ia'), request.form)
+        
         files = request.files.getlist('arquivos')
         for file in files:
             if file and file.filename != '':
@@ -493,18 +492,11 @@ def adicionar_empreendimento():
                 file.save(caminho_salvar)
                 novo_material = Material(nome_original=nome_original, nome_arquivo_servidor=nome_seguro, empreendimento_id=novo_empreendimento.id)
                 db.session.add(novo_material)
-
-        # 5. Salva todos os novos registros de materiais no banco
+        
         db.session.commit()
+        flash('Empreendimento adicionado com sucesso!', 'success')
+        return redirect(url_for('detalhes_empreendimento', id=novo_empreendimento.id))
         
-        # 6. Salva o exemplo para a IA aprender, se for o caso
-        if 'form_originado_ia' in request.form:
-            salvar_exemplo_ia(request.form.get('texto_original_ia'), request.form)
-
-        flash('Empreendimento e materiais adicionados com sucesso!', 'success')
-        return redirect(url_for('pagina_empreendimentos'))
-        
-    # Se o método for GET, apenas renderiza o formulário vazio
     return render_template('empreendimento_form.html', dados_extraidos={})
 
 @app.route('/empreendimento/<int:id>/editar', methods=['GET', 'POST'])
@@ -521,13 +513,29 @@ def editar_empreendimento(id):
         empreendimento.previsao_entrega = request.form.get('previsao_entrega')
         empreendimento.valor_medio_unidades = request.form.get('valor_medio_unidades')
         empreendimento.valor_a_partir_de = request.form.get('valor_a_partir_de')
-        empreendimento.tamanho_apartamentos_planta = request.form.get('tamanho_apartamentos_planta')
-        empreendimento.vagas_garagem = request.form.get('vagas_garagem')
         empreendimento.tamanho_terreno = request.form.get('tamanho_terreno')
         empreendimento.quantidade_torres = int(request.form.get('quantidade_torres')) if request.form.get('quantidade_torres') else None
         empreendimento.subsolos = int(request.form.get('subsolos')) if request.form.get('subsolos') else None
         empreendimento.andares = int(request.form.get('andares')) if request.form.get('andares') else None
         empreendimento.campanha_promocional = request.form.get('campanha_promocional')
+        empreendimento.arquiteto = request.form.get('arquiteto')
+        empreendimento.paisagismo = request.form.get('paisagismo')
+        empreendimento.decoracao = request.form.get('decoracao')
+        
+        for tipologia_antiga in empreendimento.tipologias:
+            db.session.delete(tipologia_antiga)
+        
+        metragens = request.form.getlist('metragem')
+        suites_lista = request.form.getlist('suites')
+        vagas_lista = request.form.getlist('vagas')
+        for i, metragem_item in enumerate(metragens):
+            if metragem_item and metragem_item.strip():
+                nova_tipologia = Tipologia(
+                    metragem=metragem_item, suites=suites_lista[i],
+                    vagas=vagas_lista[i], empreendimento_id=empreendimento.id
+                )
+                db.session.add(nova_tipologia)
+        
         files = request.files.getlist('arquivos')
         for file in files:
             if file and file.filename != '':
@@ -537,9 +545,11 @@ def editar_empreendimento(id):
                 file.save(caminho_salvar)
                 novo_material = Material(nome_original=nome_original, nome_arquivo_servidor=nome_seguro, empreendimento_id=empreendimento.id)
                 db.session.add(novo_material)
+
         db.session.commit()
         flash('Empreendimento atualizado com sucesso!', 'success')
         return redirect(url_for('detalhes_empreendimento', id=empreendimento.id))
+        
     return render_template('empreendimento_form.html', empreendimento=empreendimento, dados_extraidos={})
 
 @app.route('/empreendimento/<int:id>/deletar', methods=['POST'])
@@ -548,10 +558,7 @@ def deletar_empreendimento(id):
     if session.get('usuario_perfil') != 'Admin':
         flash('Apenas administradores podem deletar empreendimentos.', 'danger')
         return redirect(url_for('pagina_empreendimentos'))
-    
     empreendimento = db.get_or_404(Empreendimento, id)
-    
-    # Deleta os arquivos físicos associados
     for material in empreendimento.materiais:
         try:
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], material.nome_arquivo_servidor)
@@ -560,13 +567,44 @@ def deletar_empreendimento(id):
         except OSError as e:
             print(f"Erro ao deletar arquivo físico do material {material.id}: {e}")
             flash(f"Erro ao deletar arquivo {material.nome_original}", "danger")
-
     db.session.delete(empreendimento)
     db.session.commit()
     flash(f'Empreendimento "{empreendimento.nome}" e todos os seus materiais foram deletados permanentemente.', 'success')
     return redirect(url_for('pagina_empreendimentos'))
 
+# --- ROTAS DE TIPOLOGIA ---
+@app.route('/empreendimento/<int:empreendimento_id>/adicionar_tipologia', methods=['POST'])
+@login_required
+def adicionar_tipologia(empreendimento_id):
+    empreendimento = db.get_or_404(Empreendimento, empreendimento_id)
+    if session.get('usuario_perfil') != 'Admin':
+        flash('Apenas administradores podem adicionar tipologias.', 'danger')
+        return redirect(url_for('detalhes_empreendimento', id=empreendimento_id))
+    nova_tipologia = Tipologia(
+        metragem=request.form.get('metragem'),
+        suites=request.form.get('suites'),
+        vagas=request.form.get('vagas'),
+        empreendimento_id=empreendimento.id
+    )
+    db.session.add(nova_tipologia)
+    db.session.commit()
+    flash('Nova tipologia adicionada com sucesso!', 'success')
+    return redirect(url_for('detalhes_empreendimento', id=empreendimento_id))
 
+@app.route('/tipologia/<int:id>/deletar', methods=['POST'])
+@login_required
+def deletar_tipologia(id):
+    tipologia = db.get_or_404(Tipologia, id)
+    empreendimento_id = tipologia.empreendimento_id
+    if session.get('usuario_perfil') != 'Admin':
+        flash('Apenas administradores podem deletar tipologias.', 'danger')
+        return redirect(url_for('detalhes_empreendimento', id=empreendimento_id))
+    db.session.delete(tipologia)
+    db.session.commit()
+    flash('Tipologia deletada com sucesso.', 'info')
+    return redirect(url_for('detalhes_empreendimento', id=empreendimento_id))
+
+# --- ROTAS DE MATERIAIS E UPLOADS ---
 @app.route('/uploads/<path:filename>')
 @login_required
 def download_material(filename):
@@ -789,34 +827,25 @@ def ler_pdf_empreendimento():
     if not files or files[0].filename == '':
         flash('Nenhum documento enviado.', 'danger')
         return redirect(url_for('adicionar_empreendimento'))
-
     texto_extraido_completo = ""
     nomes_arquivos_salvos = []
     for file in files:
         if file and file.filename.endswith('.pdf'):
             try:
                 nome_original = file.filename
-                # Cria um nome de arquivo seguro e único para evitar substituições
                 nome_seguro = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secure_filename(nome_original)}"
                 caminho_salvar = os.path.join(app.config['UPLOAD_FOLDER'], nome_seguro)
-                
-                # Salva o arquivo no disco
                 file.seek(0)
                 file.save(caminho_salvar)
-                # Guarda o nome original e o nome seguro para uso posterior
                 nomes_arquivos_salvos.append(f"{nome_original}|{nome_seguro}")
-
-                # Extrai o texto para a IA
                 file.seek(0)
                 with fitz.open(stream=file.read(), filetype="pdf") as doc:
                     for page in doc:
                         texto_extraido_completo += page.get_text() + "\n\n"
             except Exception as e:
                 flash(f"Erro ao processar o arquivo {file.filename}: {e}", "danger")
-    
     if not texto_extraido_completo.strip():
-        flash("Não foi possível extrair texto dos PDFs enviados (verifique se não são PDFs de imagem).", "warning")
-        # Mesmo se a extração de texto falhar, ainda passamos os arquivos salvos para o template
+        flash("Não foi possível extrair texto dos PDFs enviados (o PDF pode ser baseado em imagem).", "warning")
         return render_template('empreendimento_form.html', dados_extraidos={}, arquivos_para_anexar=nomes_arquivos_salvos)
     prompt = f"""Você é um robô assistente altamente preciso, especialista em extrair dados de documentos do mercado imobiliário para um CRM. Analise o texto abaixo e retorne as informações em um formato JSON. REGRAS RÍGIDAS: Sua resposta deve ser APENAS e EXCLUSIVAMENTE um objeto JSON válido. Se uma informação não for encontrada, o valor do campo no JSON deve ser uma string vazia "". Use este formato: {{"nome": "...", "status": "...", "endereco": "...", "descricao": "...", "previsao_entrega": "...", "valor_a_partir_de": "...", "tamanho_apartamentos_planta": "...", "vagas_garagem": "...", "quantidade_torres": 1, "subsolos": 2, "andares": 25, "campanha_promocional": "..."}} TEXTO DOS DOCUMENTOS: --- {texto_extraido_completo[:8000]} ---"""
     dados_extraidos = {}
@@ -833,7 +862,7 @@ def ler_pdf_empreendimento():
             flash("Documento analisado com IA! Por favor, revise os campos preenchidos.", "success")
         else:
             flash("A IA respondeu, mas não em um formato JSON válido. Tentando autocorreção...", "warning")
-            prompt_correcao = f"Sua resposta anterior não estava no formato JSON correto. Sua resposta foi: '{response.text}'. Por favor, corrija seu erro e forneça APENAS o objeto JSON válido baseado no documento original que te enviei, sem nenhuma outra palavra ou explicação."
+            prompt_correcao = f"Sua resposta anterior não estava no formato JSON correto. Sua resposta foi: '{response.text}'. Por favor, corrija seu erro e forneça APENAS o objeto JSON válido baseado no documento original, sem nenhuma outra palavra ou explicação."
             response_corrigida = model.generate_content(prompt_correcao)
             resposta_texto_corrigido = response_corrigida.text
             inicio_json_c = resposta_texto_corrigido.find('{')

@@ -15,22 +15,47 @@
         <div class="card"><h2>Previsão de Entrega</h2><p class="number" style="font-size: 36px;">{{ empreendimento.previsao_entrega or 'N/A' }}</p></div>
     </div>
 
-    <fieldset>
-        <legend>Descrição Geral</legend>
-        <p>{{ empreendimento.descricao | nl2br if empreendimento.descricao else 'Nenhuma descrição.' }}</p>
-    </fieldset>
+    <fieldset><legend>Descrição Geral</legend><p>{{ empreendimento.descricao | nl2br if empreendimento.descricao else 'Nenhuma descrição.' }}</p></fieldset>
     
     <fieldset>
-        <legend>Detalhes Técnicos</legend>
-        <p><strong>Plantas:</strong> {{ empreendimento.tamanho_apartamentos_planta or 'N/A' }} | <strong>Vagas:</strong> {{ empreendimento.vagas_garagem or 'N/A' }} | <strong>Tamanho do Terreno:</strong> {{ empreendimento.tamanho_terreno or 'N/A' }}</p>
+        <legend>Estrutura e Detalhes Técnicos</legend>
+        <p><strong>Tamanho do Terreno:</strong> {{ empreendimento.tamanho_terreno or 'N/A' }}</p>
         <p><strong>Estrutura:</strong> {{ empreendimento.quantidade_torres or 'N/A' }} torre(s), {{ empreendimento.andares or 'N/A' }} andares, {{ empreendimento.subsolos or 'N/A' }} subsolo(s).</p>
         <p><strong>Prazo Final de Entrega:</strong> {{ empreendimento.prazo_entrega.strftime('%d/%m/%Y') if empreendimento.prazo_entrega else 'Não informado' }}</p>
+        
+        <hr style="margin-top: 20px; margin-bottom: 20px;">
+        <h4>Tipologias de Unidades</h4>
+        {% if empreendimento.tipologias %}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid var(--cor-borda);">
+                        <th style="padding: 8px;">Metragem</th>
+                        <th style="padding: 8px;">Suítes</th>
+                        <th style="padding: 8px;">Vagas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tipo in empreendimento.tipologias %}
+                    <tr style="border-bottom: 1px solid var(--cor-borda);">
+                        <td style="padding: 8px;">{{ tipo.metragem }}</td>
+                        <td style="padding: 8px;">{{ tipo.suites }}</td>
+                        <td style="padding: 8px;">{{ tipo.vagas }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Nenhuma tipologia cadastrada. Adicione na página de edição.</p>
+        {% endif %}
     </fieldset>
-    
-    <fieldset>
-        <legend>Campanha Promocional</legend>
-        <p>{{ empreendimento.campanha_promocional | nl2br if empreendimento.campanha_promocional else 'Nenhuma campanha ativa.' }}</p>
+
+    <fieldset><legend>Profissionais</legend>
+        <p><strong>Arquitetura:</strong> {{ empreendimento.arquiteto or 'Não informado' }}</p>
+        <p><strong>Paisagismo:</strong> {{ empreendimento.paisagismo or 'Não informado' }}</p>
+        <p><strong>Decoração:</strong> {{ empreendimento.decoracao or 'Não informado' }}</p>
     </fieldset>
+
+    <fieldset><legend>Campanha Promocional</legend><p>{{ empreendimento.campanha_promocional | nl2br if empreendimento.campanha_promocional else 'Nenhuma campanha ativa.' }}</p></fieldset>
     <hr>
 
     <h2>Materiais de Apoio</h2>
@@ -39,7 +64,6 @@
             {% for material in empreendimento.materiais %}
                 <li>
                     <a href="{{ url_for('download_material', filename=material.nome_arquivo_servidor) }}" target="_blank">{{ material.nome_original }}</a>
-                    
                     <span style="float: right;">
                         <a href="{{ url_for('renomear_material', id=material.id) }}" style="font-size: 12px; margin-left: 15px;">Renomear</a>
                         <form action="{{ url_for('deletar_material', id=material.id) }}" method="post" style="display: inline; margin-left: 10px;">
@@ -52,8 +76,7 @@
     {% else %}
         <p>Nenhum material cadastrado para este empreendimento.</p>
     {% endif %}
-
-    <p style="font-size: 14px; color: #6c757d;">Para adicionar novos materiais, vá em "Editar Empreendimento".</p>
+     <p style="font-size: 14px; color: #6c757d;">Para adicionar novos materiais, vá em "Editar Empreendimento".</p>
 
     <br><br>
     <a href="{{ url_for('pagina_empreendimentos') }}">Voltar para a Lista</a>

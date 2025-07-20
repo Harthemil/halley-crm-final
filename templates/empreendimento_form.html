@@ -2,7 +2,7 @@
 {% block title %}{% if empreendimento %}Editar Empreendimento{% else %}Adicionar Empreendimento{% endif %}{% endblock %}
 
 {% block content %}
-  <h1>{% if empreendimento %}Editar Empreendimento{% else %}Adicionar Novo Empreendimento{% endif %}</h1>
+    <h1>{% if empreendimento %}Editar Empreendimento{% else %}Adicionar Novo Empreendimento{% endif %}</h1>
 
     <fieldset>
         <legend>Análise Inteligente de Documento</legend>
@@ -21,14 +21,19 @@
 
     <form method="post" enctype="multipart/form-data" action="{{ url_for('editar_empreendimento', id=empreendimento.id) if empreendimento else url_for('adicionar_empreendimento') }}">
         
-                {% if arquivos_para_anexar %}
-            <input type="hidden" name="arquivos_ja_enviados" value="{{ arquivos_para_anexar|join(',') }}">
-        {% endif %}
-
         {% if dados_extraidos %}
             <input type="hidden" name="form_originado_ia" value="true">
             <input type="hidden" name="texto_original_ia" value="{{ texto_original_para_salvar }}">
-            <div class="alert alert-success">Revise os campos preenchidos pela IA e clique em "Salvar Empreendimento" para confirmar e ensinar o modelo.</div>
+            <input type="hidden" name="arquivos_ja_enviados" value="{{ arquivos_para_anexar|join(',') }}">
+            
+            <fieldset style="border-color: var(--cor-sucesso);">
+                <legend>Corrija e Ensine a IA</legend>
+                <div class="alert alert-success">Revise os campos preenchidos pela IA abaixo. Se algo estiver errado ou faltando, corrija diretamente no campo e, se quiser, dê uma instrução para a IA aprender.</div>
+                <div>
+                    <label for="instrucao_correcao">Instrução para a IA (Opcional):</label>
+                    <textarea id="instrucao_correcao" name="instrucao_correcao" rows="3" placeholder="Ex: Para o campo 'Status', procure por 'Estágio da Obra' no documento. Para 'Vagas', considere o número antes da palavra 'vaga(s)'."></textarea>
+                </div>
+            </fieldset>
         {% endif %}
 
         <fieldset>
@@ -48,15 +53,42 @@
         </fieldset>
 
         <fieldset>
-            <legend>Estrutura e Detalhes Técnicos</legend>
-            <div><label for="tamanho_apartamentos_planta">Tamanho dos Apartamentos (Planta):</label><input type="text" id="tamanho_apartamentos_planta" name="tamanho_apartamentos_planta" value="{{ dados_extraidos.get('tamanho_apartamentos_planta') or (empreendimento.tamanho_apartamentos_planta if empreendimento) or '' }}" placeholder="Ex: 50m², 75m² e 120m²"></div><br>
-            <div><label for="vagas_garagem">Vagas de Garagem:</label><input type="text" id="vagas_garagem" name="vagas_garagem" value="{{ dados_extraidos.get('vagas_garagem') or (empreendimento.vagas_garagem if empreendimento) or '' }}" placeholder="Ex: 1 ou 2 vagas"></div><br>
+            <legend>Estrutura, Detalhes Técnicos e Tipologias</legend>
             <div><label for="tamanho_terreno">Tamanho do Terreno:</label><input type="text" id="tamanho_terreno" name="tamanho_terreno" value="{{ dados_extraidos.get('tamanho_terreno') or (empreendimento.tamanho_terreno if empreendimento) or '' }}" placeholder="Ex: 4.500 m²"></div><br>
             <div style="display: flex; gap: 10px;">
                 <div style="flex: 1;"><label for="quantidade_torres">Nº de Torres:</label><input type="number" id="quantidade_torres" name="quantidade_torres" value="{{ dados_extraidos.get('quantidade_torres') or (empreendimento.quantidade_torres if empreendimento) or '' }}"></div>
                 <div style="flex: 1;"><label for="subsolos">Nº de Subsolos:</label><input type="number" id="subsolos" name="subsolos" value="{{ dados_extraidos.get('subsolos') or (empreendimento.subsolos if empreendimento) or '' }}"></div>
                 <div style="flex: 1;"><label for="andares">Nº de Andares:</label><input type="number" id="andares" name="andares" value="{{ dados_extraidos.get('andares') or (empreendimento.andares if empreendimento) or '' }}"></div>
             </div>
+            <hr>
+            <h4>Tipologias de Unidades</h4>
+            <div id="tipologias-container">
+                {% if empreendimento and empreendimento.tipologias %}
+                    {% for tipo in empreendimento.tipologias %}
+                    <div class="tipologia-row" style="display: flex; gap: 10px; align-items: flex-end; padding-top: 10px; margin-top: 10px; border-top: 1px solid #eee;">
+                        <div><label>Metragem</label><input type="text" name="metragem" value="{{ tipo.metragem }}"></div>
+                        <div><label>Suítes</label><input type="text" name="suites" value="{{ tipo.suites }}"></div>
+                        <div><label>Vagas</label><input type="text" name="vagas" value="{{ tipo.vagas }}"></div>
+                        <div><button type="button" class="remover-tipo-btn" style="background-color: var(--cor-perigo);">Remover</button></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="tipologia-row" style="display: flex; gap: 10px; align-items: flex-end; padding-top: 10px; margin-top: 10px;">
+                        <div><label>Metragem (ex: 62m²)</label><input type="text" name="metragem"></div>
+                        <div><label>Suítes (ex: 1 suíte)</label><input type="text" name="suites"></div>
+                        <div><label>Vagas (ex: 1 vaga)</label><input type="text" name="vagas"></div>
+                        <div><button type="button" class="remover-tipo-btn" style="background-color: var(--cor-perigo);">Remover</button></div>
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" id="add-tipo-btn" style="margin-top: 15px; background-color: var(--cor-cinza);">+ Adicionar Outra Tipologia</button>
+        </fieldset>
+        
+        <fieldset>
+            <legend>Profissionais Responsáveis</legend>
+            <div><label for="arquiteto">Arquiteto(a):</label><input type="text" id="arquiteto" name="arquiteto" value="{{ dados_extraidos.get('arquiteto') or (empreendimento.arquiteto if empreendimento) or '' }}"></div><br>
+            <div><label for="paisagismo">Paisagismo:</label><input type="text" id="paisagismo" name="paisagismo" value="{{ dados_extraidos.get('paisagismo') or (empreendimento.paisagismo if empreendimento) or '' }}"></div><br>
+            <div><label for="decoracao">Decoração:</label><input type="text" id="decoracao" name="decoracao" value="{{ dados_extraidos.get('decoracao') or (empreendimento.decoracao if empreendimento) or '' }}"></div>
         </fieldset>
 
         <fieldset>
@@ -81,4 +113,36 @@
     </form>
     <br>
     <a href="{{ url_for('pagina_empreendimentos') }}">Cancelar</a>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addButton = document.getElementById('add-tipo-btn');
+            const container = document.getElementById('tipologias-container');
+
+            function addRemoveListener(button) {
+                button.addEventListener('click', function() {
+                    const rowToRemove = button.closest('.tipologia-row');
+                    rowToRemove.remove();
+                });
+            }
+
+            addButton.addEventListener('click', function() {
+                const newRow = document.createElement('div');
+                newRow.classList.add('tipologia-row');
+                newRow.style.cssText = "display: flex; gap: 10px; align-items: flex-end; padding-top: 10px; margin-top: 10px; border-top: 1px solid #eee;";
+                newRow.innerHTML = `
+                    <div><label>Metragem</label><input type="text" name="metragem"></div>
+                    <div><label>Suítes</label><input type="text" name="suites"></div>
+                    <div><label>Vagas</label><input type="text" name="vagas"></div>
+                    <div><button type="button" class="remover-tipo-btn" style="background-color: var(--cor-perigo);">Remover</button></div>
+                `;
+                container.appendChild(newRow);
+                addRemoveListener(newRow.querySelector('.remover-tipo-btn'));
+            });
+
+            document.querySelectorAll('.remover-tipo-btn').forEach(button => {
+                addRemoveListener(button);
+            });
+        });
+    </script>
 {% endblock %}
